@@ -321,6 +321,7 @@ document.addEventListener('DOMContentLoaded', function () {
         } else if (src.endsWith('.mp4')) {
             const video = document.createElement('video');
             video.src = src;
+            video.play();
             video.preload = 'auto';
             video.muted = true; // iOS Safari requiere muted para preload
             video.playsInline = true;
@@ -397,6 +398,7 @@ document.addEventListener('DOMContentLoaded', function () {
             } else if (src.endsWith('.mp4')) {
                 const video = document.createElement('video');
                 video.src = src;
+                video.play();
                 video.preload = 'auto';
             }
         });
