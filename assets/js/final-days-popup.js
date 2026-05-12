@@ -4,8 +4,9 @@
     'use strict';
 
     // Configuration
-    const DEADLINE = new Date('2026-04-30T21:00:00+02:00'); // 21:00 España (UTC+2 en abril)
+    const DEADLINE = new Date('2026-05-12T21:00:00+02:00'); // 21:00 España martes 12 de mayo (UTC+2)
     const COUNTDOWN_UPDATE_INTERVAL = 1000; // Update every second
+    const SIMULATE_DEADLINE_REACHED = true; // SET TO FALSE TO DISABLE SIMULATION
 
     // DOM Elements
     const popup = document.getElementById('finalDaysPopup');
@@ -29,7 +30,45 @@
 
     // Check if deadline has passed
     function isDeadlineReached() {
+        if (SIMULATE_DEADLINE_REACHED) return true;
         return new Date() >= DEADLINE;
+    }
+
+    // Show NIERIKA video and apply dark theme
+    function activateNierika() {
+        // Show video as map element (clone template and make visible)
+        const videoTemplate = document.getElementById('nierika-video-template');
+        if (videoTemplate) {
+            videoTemplate.style.display = 'block';
+        }
+        
+        // Hide popup if visible
+        if (popup) {
+            popup.style.display = 'none';
+        }
+        
+        // Update countdown to show "DROP 1 NOW AVAILABLE"
+        // Hide individual countdown elements
+        if (countdownLargeDays) countdownLargeDays.style.display = 'none';
+        if (countdownLargeHours) countdownLargeHours.style.display = 'none';
+        if (countdownLargeMinutes) countdownLargeMinutes.style.display = 'none';
+        if (countdownLargeSeconds) countdownLargeSeconds.style.display = 'none';
+        
+        // Add new div for "DROP 1 NOW AVAILABLE" text
+        const countdownLargeContent = document.querySelector('.countdown-large-content');
+        if (countdownLargeContent) {
+            // Remove old content
+            countdownLargeContent.innerHTML = '';
+            
+            // Create new drop text element
+            const dropText = document.createElement('div');
+            dropText.className = 'drop-text-container';
+            dropText.innerHTML = '<span class=\"drop-text\">DROP 1<br>NOW AVAILABLE</span>';
+            countdownLargeContent.appendChild(dropText);
+        }
+        
+        // Apply dark theme
+        document.body.classList.add('nierika-active');
     }
 
     // Update all countdown displays
@@ -38,17 +77,8 @@
         const diff = DEADLINE - now;
 
         if (diff <= 0) {
-            // Deadline reached - hide countdown
-            if (countdownLarge) {
-                countdownLarge.style.display = 'none';
-            }
-            if (popup) popup.style.display = 'none';
-            
-            // Set all to 00
-            const zeroPadded = '00';
-            [countdownLargeDays, countdownLargeHours, countdownLargeMinutes, countdownLargeSeconds].forEach(el => {
-                if (el) el.textContent = zeroPadded;
-            });
+            // Deadline reached - show NIERIKA video and dark theme
+            activateNierika();
             return;
         }
 
@@ -209,10 +239,9 @@
 
     // Initialize
     function initialize() {
-        // DO NOT SHOW if deadline has already passed
+        // Check if deadline has already passed
         if (isDeadlineReached()) {
-            if (countdownLarge) countdownLarge.style.display = 'none';
-            if (popup) popup.style.display = 'none';
+            activateNierika();
             return;
         }
 

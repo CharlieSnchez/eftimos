@@ -551,9 +551,9 @@ window.addEventListener('DOMContentLoaded', () => {
     }, 120);
 });
 
-const maxBlur = 8;
+const maxBlur = 12;
 const randomOffsetRange = 150;
-const bufferPercent = 0.15; // Más buffer para que los elementos no queden cerca del borde
+const bufferPercent = 0.15; // Buffer para margen entre elementos y zona navegable
 const smoothness = 0.08;
 const friction = 0;
 const minVelocity = 0.1;
@@ -593,13 +593,16 @@ let centerY = windowHeight / 2 - 40; // Subido 40px para centrar mejor el enfoqu
 let bufferX = windowWidth * bufferPercent;
 let bufferY = windowHeight * bufferPercent;
 
-let contentWidth = (gridColumns - 1) * gridSpacing;
-let contentHeight = (gridRows - 1) * gridSpacing;
+//let contentWidth = (gridColumns - 1) * gridSpacing;
+//let contentHeight = (gridRows - 1) * gridSpacing;
+let contentHeight = 1 * gridSpacing;
+let contentWidth = 1 * gridSpacing;
+
 
 let minOffsetX = -contentWidth - bufferX;
-let maxOffsetX = bufferX;
+let maxOffsetX = contentWidth + bufferX;
 let minOffsetY = -contentHeight - bufferY;
-let maxOffsetY = bufferY;
+let maxOffsetY = contentHeight + bufferY;
 
 // Make map bounds globally accessible for controls.js audio intensification
 window.minOffsetX = minOffsetX;
@@ -698,6 +701,11 @@ function createImageElement(imageIndex, gridX, gridY) {
         container.classList.add('initial-center');
     }
 
+    // Mark if it's a locked element
+    if (template.classList.contains('locked-element')) {
+        container.classList.add('locked-element');
+    }
+
     container.appendChild(clonedContent.firstElementChild);
 
     mapGroup.appendChild(container);
@@ -707,7 +715,10 @@ function createImageElement(imageIndex, gridX, gridY) {
         gridX: gridX,
         gridY: gridY,
         imageIndex: imageIndex,
-        isInitialCenter: template.classList.contains('initial-center')
+        isInitialCenter: template.classList.contains('initial-center'),
+        isLockedElement: template.classList.contains('locked-element'),
+        isCenterVideo: template.hasAttribute('data-center-video'),
+        revealPosition: template.getAttribute('data-reveal-position') || null
     };
 }
 
@@ -742,32 +753,62 @@ function createAllImages() {
     }
 }
 
+function getImageBasePosition(img) {
+    if (img.isCenterVideo) {
+        return { x: 0, y: 0 };
+    }
+    if (img.revealPosition === 'left') {
+        return { x: -gridSpacing * 0.6, y: 0 };
+    }
+    if (img.revealPosition === 'right') {
+        return { x: gridSpacing * 0.6, y: 0 };
+    }
+    if (img.isInitialCenter) {
+        const centerElements = images.filter(e => e.isInitialCenter);
+        const centerCount = centerElements.length;
+        const centerIndex = centerElements.indexOf(img);
+        const centerCircleRadius = gridSpacing * 0.25;
+        const angle = (centerIndex / centerCount) * Math.PI * 2;
+        return {
+            x: Math.cos(angle) * centerCircleRadius,
+            y: Math.sin(angle) * centerCircleRadius
+        };
+    }
+    if (img.isLockedElement) {
+        const lockedElements = images.filter(e => e.isLockedElement);
+        const lockedCount = lockedElements.length;
+        const lockedIndex = lockedElements.indexOf(img);
+        const circleRadius = gridSpacing * 1.4;
+        const angle = (lockedIndex / lockedCount) * Math.PI * 2;
+        return {
+            x: Math.cos(angle) * circleRadius,
+            y: Math.sin(angle) * circleRadius
+        };
+    }
+    const randomOffset = getRandomOffset(img.gridX, img.gridY);
+    return {
+        x: img.gridX * gridSpacing + (randomOffset.x * 1),
+        y: img.gridY * gridSpacing + (randomOffset.y * 1)
+    };
+}
+
 function getInitialCenterPosition() {
     if (images.length === 0) {
         return { x: 0, y: 0 };
     }
-    // Centrar el grupo de imágenes en el centro de la superficie navegable
-    // Calcula el centro del grupo
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+
+    let sumX = 0;
+    let sumY = 0;
+
     images.forEach(img => {
-        const randomOffset = getRandomOffset(img.gridX, img.gridY);
-        // Reduce offset for initial-center elements (like origin)
-        const offsetMultiplier = img.isInitialCenter ? 0.3 : 1;
-        // Add additional offset for origin: move right and down in large resolutions
-        const additionalOffsetX = img.isInitialCenter && windowWidth >= 992 ? 70 : 0;
-        const additionalOffsetY = img.isInitialCenter && windowWidth >= 992 ? 120 : 0;
-        const x = img.gridX * gridSpacing + (randomOffset.x * offsetMultiplier) + additionalOffsetX;
-        const y = img.gridY * gridSpacing + (randomOffset.y * offsetMultiplier) + additionalOffsetY;
-        if (x < minX) minX = x;
-        if (x > maxX) maxX = x;
-        if (y < minY) minY = y;
-        if (y > maxY) maxY = y;
+        const pos = getImageBasePosition(img);
+        sumX += pos.x;
+        sumY += pos.y;
     });
-    const groupCenterX = (minX + maxX) / 2;
-    const groupCenterY = (minY + maxY) / 2;
+
     return {
-        x: -groupCenterX,
-        y: -groupCenterY
+        x: -(sumX / images.length),
+        y: -(sumY / images.length)
     };
 }
 
@@ -853,15 +894,8 @@ function updateImagePositions() {
 
     for (let i = 0; i < len; i++) {
         const img = images[i];
-        const randomOffset = getRandomOffset(img.gridX, img.gridY);
 
-        // Reduce offset for initial-center elements (like origin) to keep them closer to center
-        const offsetMultiplier = img.isInitialCenter ? 0.3 : 1;
-        // Add additional offset for origin: move right and down in large resolutions
-        const additionalOffsetX = img.isInitialCenter && windowWidth >= 992 ? 70 : 0;
-        const additionalOffsetY = img.isInitialCenter && windowWidth >= 992 ? 120 : 0;
-        const baseX = img.gridX * gridSpacing + (randomOffset.x * offsetMultiplier) + additionalOffsetX;
-        const baseY = img.gridY * gridSpacing + (randomOffset.y * offsetMultiplier) + additionalOffsetY;
+        const { x: baseX, y: baseY } = getImageBasePosition(img);
 
         const x = baseX * scale + offsetXScaled + centerX;
         const y = baseY * scale + offsetYScaled + centerY;
@@ -1636,7 +1670,7 @@ function createCinemaMode(originalVideo, container) {
         document.body.appendChild(cinemaDim);
     }
     cinemaDim.style.zIndex = '99999';
-    cinemaDim.style.pointerEvents = 'auto';
+    cinemaDim.style.pointerEvents = 'none';
     cinemaDim.style.opacity = '0';
 
     // Create cloned video element
@@ -1655,6 +1689,7 @@ function createCinemaMode(originalVideo, container) {
     clone.style.objectFit = 'contain';
     clone.style.pointerEvents = 'auto';
     clone.style.transition = 'all 0.8s cubic-bezier(0.76, 0, 0.24, 1)';
+    clone.style.cursor = 'pointer';
 
     document.body.appendChild(clone);
 
@@ -1750,6 +1785,18 @@ function createCinemaMode(originalVideo, container) {
         playPauseBtn.textContent = '▶';
     });
 
+    // Click on video to toggle play/pause
+    clone.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (clone.paused) {
+            clone.play();
+            playPauseBtn.textContent = '⏸';
+        } else {
+            clone.pause();
+            playPauseBtn.textContent = '▶';
+        }
+    });
+
     // Volume slider
     volumeSlider.addEventListener('input', (e) => {
         const volume = e.target.value / 100;
@@ -1813,15 +1860,17 @@ function createCinemaMode(originalVideo, container) {
         function onCinemaDimClick(e) {
             const controls = document.getElementById('cinemaControls');
             const clone = document.getElementById('cinemaClone');
+            const closeBtn = document.getElementById('cinemaClose');
             if (controls && controls.contains(e.target)) return;
             if (clone && clone.contains(e.target)) return;
+            if (closeBtn && closeBtn.contains(e.target)) return;
             closeCinema();
         }
-        cinemaDim.addEventListener('mousedown', onCinemaDimClick);
+        document.addEventListener('click', onCinemaDimClick);
         // Limpiar listener al cerrar
         const prevCloseCinema = closeCinema;
         closeCinema = function () {
-            cinemaDim.removeEventListener('mousedown', onCinemaDimClick);
+            document.removeEventListener('click', onCinemaDimClick);
             prevCloseCinema();
         };
 
@@ -1871,7 +1920,7 @@ function createCinemaMode(originalVideo, container) {
             if (cinemaDim) cinemaDim.remove();
         }, 1000);
         window.removeEventListener('keydown', onKey);
-        cinemaDim.removeEventListener('click', closeCinema);
+        document.removeEventListener('click', onCinemaDimClick);
     }
 
     function onKey(ev) {
@@ -1879,7 +1928,6 @@ function createCinemaMode(originalVideo, container) {
     }
 
     closeBtn.addEventListener('click', closeCinema);
-    cinemaDim.addEventListener('click', closeCinema);
     window.addEventListener('keydown', onKey);
 }
 

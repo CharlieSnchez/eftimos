@@ -188,7 +188,7 @@
             // ctx.fillRect(0, 0, canvas.width, canvas.height);
             
             // Draw border
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0)';
             ctx.lineWidth = 1;
             ctx.strokeRect(0, 0, canvas.width, canvas.height);
             
@@ -241,7 +241,7 @@
                     const distance = Math.sqrt(dx * dx + dy * dy);
                     
                     // Calculate opacity based on distance
-                    let opacity = 0;
+                    let opacity = 0.1;
                     if (distance < REVEAL_RADIUS) {
                         opacity = 1;
                     } else if (distance < REVEAL_RADIUS + FADE_DISTANCE) {
@@ -250,13 +250,13 @@
                     
                     // Draw character with calculated opacity
                     if (opacity > 0) {
-                        // Opacidad máxima aún más baja (por ejemplo, 0.28)
-                        ctx.fillStyle = `rgba(0, 0, 0, ${opacity * 0.28})`;
+                        // White text instead of black
+                        ctx.fillStyle = `rgba(255, 255, 255, ${opacity * 0.85})`;
                         ctx.fillText(char, currentX + charWidth / 2, y);
-                        // Glow más tenue
+                        // Glow more subtle
                         if (opacity > 0.7) {
-                            ctx.shadowColor = 'rgba(0, 0, 0, 0.05)';
-                            ctx.shadowBlur = 2;
+                            ctx.shadowColor = 'rgba(255, 255, 255, 0.1)';
+                            ctx.shadowBlur = 3;
                             ctx.fillText(char, currentX + charWidth / 2, y);
                             ctx.shadowBlur = 0;
                         }

@@ -10,7 +10,7 @@
     const CONFIG = {
         rootMargin: '50px', // Pre-cargar videos 50px antes de que sean visibles
         threshold: 0.1,      // 10% de visibilidad para activar
-        quality: 0.8         // Calidad de compresión para mobile
+        quality: 0.6         // Calidad de compresión para mobile
     };
 
     // Detectar capacidades del dispositivo

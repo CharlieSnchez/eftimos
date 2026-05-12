@@ -13,7 +13,9 @@
     <link rel="manifest" href="assets/images/favicon_io/site.webmanifest">
     <link rel="icon" type="image/png" sizes="192x192" href="assets/images/favicon_io/android-chrome-192x192.png">
     <link rel="icon" type="image/png" sizes="512x512" href="assets/images/favicon_io/android-chrome-512x512.png">
-
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bonheur+Royale&display=swap" rel="stylesheet">
     <meta name="description"
         content="An inner house where silence, craft, and the avant-garde meet. Join to receive your access key and early access to releases and updates.">
     <meta name="keywords"
@@ -168,16 +170,11 @@
     <canvas id="grainCanvas" style="opacity:0;"></canvas>
 
     <!-- Background Video TOP -->
-    <div id="videos-background" style="opacity:0;">
-        <!-- Video de fondo principal -->
-        <video autoplay muted loop playsinline preload="auto">
-            <source src="assets/vid/reels-mixed-vid.mp4" type="video/mp4">
+    <div id="videos-background" style="opacity:0.2; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none;">
+        <!-- NIERIKA trailer video de fondo -->
+        <video autoplay muted loop playsinline preload="auto" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+            <source src="assets/vid/nierika/NIERIKA-trailer-1.mp4" type="video/mp4">
         </video>
-
-        <!-- Overlay de video con transparencia y blend mode 
-        <video id="stormlight-overlay" autoplay muted loop playsinline preload="auto" style="opacity:0.5;mix-blend-mode:screen;pointer-events:none;">
-            <source src="assets/vid/visualizer/light-leak-orange.mp4" type="video/mp4">   
-        </video> -->
     </div>
 
     <nav class="blending-item">
@@ -309,61 +306,90 @@
                 <span class="tooltip">TEAM</span>
             </a>
         </div>-->
-        <div class="image-template initial-center">
+        <!-- CENTER ELEMENTS: NIERIKA VIDEO + REVEAL TEXT (POEMA - LEFT & RIGHT) + LOOKBOOK/SHOOTING/RUNWAY -->
+        <div id="nierika-video-template" class="image-template initial-center" data-center-video="true" data-sound="nierika" data-shape="circle" style="width: 200%; height: 200%;">
+            <div class="video-link" style="width: 200%; height: 200%; position: relative; cursor: pointer;">
+                <video id="nierika-video-player" autoplay muted loop playsinline preload="auto" style="width: 200%; margin-left: -50% !important; object-fit: contain; display: block;">
+                    <source src="assets/vid/nierika/NIERIKA FF_music_v5.mp4" type="video/mp4">
+                </video>
+                <span class="tooltip">FASHION FILM</span>
+            </div>
+        </div>
+        <!-- REVEAL TEXT LEFT HALF -->
+        <div class="image-template initial-center reveal-text-template reveal-text-left" data-reveal-position="left" data-text="Land is never generous.&#10; &#10;It is exact.&#10; &#10;Nothing grows as a gift, only as agreement." data-sound="locked-in-oneself">
+            <div class="reveal-text-container">
+                <canvas class="reveal-text-canvas" style="display: block; width: 100%; height: 100%; margin-left: -100px"></canvas>
+            </div>
+        </div>
+        <!-- REVEAL TEXT RIGHT HALF -->
+        <div class="image-template initial-center reveal-text-template reveal-text-right" data-reveal-position="right" data-text="Soil is not passive... &#10; &#10;But a condition that must be understood.&#10;&#10;Only then, the ritual can begin." data-sound="locked-in-oneself">
+            <div class="reveal-text-container">
+                <canvas class="reveal-text-canvas" style="display: block; width: 100%; height: 100%; margin-right: -100px"></canvas>
+            </div>
+        </div>
+<!--
+        <div class="image-template initial-center locked-element" data-outer-nierika="true">
+             <div class="image-link" data-sound="nierika" data-shape="circle" style="margin-top: 220px">
+                <img src="assets/images/nierika-lookbook/EAFTIMOS_LOOKBOOK-1.jpg" alt="NIERIKA AW26 Lookbook" loading="lazy" >
+                <span class="tooltip">LOOKBOOK</span>
+            </div> 
+        </div>
+        <div class="image-template initial-center locked-element" data-outer-nierika="true">
+            <div class="image-link" data-sound="nierika" data-shape="circle">
+                <img src="assets/images/nierika-campaign/EAFTIMOS_CAMPAIGN-11.jpg" alt="NIERIKA AW26 Shooting" loading="lazy" style="margin-top: 270px">
+                <span class="tooltip">SHOOTING</span>
+            </div>
+        </div>
+        <div class="image-template initial-center locked-element" data-outer-nierika="true">
+            <div class="image-link" data-sound="nierika" data-shape="circle">
+                <img src="assets/images/nierika-runway/Eaftimos_Niekira 12.jpg" alt="NIERIKA AW26 Runway" loading="lazy" style="margin-top: -220px">
+                <span class="tooltip">RUNWAY AW26</span>
+            </div>
+        </div>-->
+        
+        <!-- OUTER CIRCLE LOCKED ELEMENTS -->
+        <div class="image-template locked-element">
             <a href="origin.html" class="image-link" data-sound="origin" data-shape="circle">
-                <img src="assets/images/origin-page/origin-n5-thumb.jpg" alt="Fashion Mountain Collection" loading="lazy"
-                    width="170" height="170">
+                <img src="assets/images/origin-page/origin-n5-thumb.jpg" alt="Fashion Mountain Collection" loading="lazy">
                 <span class="tooltip">ORIGIN</span>
             </a>
         </div>
-        <div class="image-template">
+        <div class="image-template locked-element">
             <a href="atelier.html" class="image-link" data-sound="atelier" data-shape="circle">
-                <img src="assets/images/g-5.webp" alt="Fashion Collection Winter" loading="lazy" width="170"
-                    height="170">
+                <img src="assets/images/g-5.webp" alt="Fashion Collection Winter" loading="lazy" width="170" height="170">
                 <span class="tooltip">ATELIER</span>
             </a>
         </div>
-        <div class="image-template">
+        
+        <div class="image-template locked-element">
             <a href="gallery-view.html" class="image-link" data-sound="resilience" data-shape="circle">
-                <img src="assets/images/g-2.webp" alt="Fashion Nature Collection" loading="lazy" width="170"
-                    height="170">
+                <img src="assets/images/g-2.webp" alt="Fashion Nature Collection" loading="lazy" width="170" height="170">
                 <span class="tooltip">RESiLiENCE AW24 COLLECTION</span>
             </a>
         </div>
-        <div class="image-template">
+        <div class="image-template locked-element">
             <a href="bts.html" class="image-link" data-sound="bts" data-shape="circle">
-                <img src="assets/images/bts-resiliance/eaftimosbts1499-thumb.jpg" alt="Behind The Scenes" loading="lazy"
-                    width="170" height="170">
+                <img src="assets/images/bts-resiliance/eaftimosbts1499-thumb.jpg" alt="Behind The Scenes" loading="lazy" width="170" height="170">
                 <span class="tooltip">RESiLiENCE AW24 BTS</span>
             </a>
         </div>
-        <div class="image-template reveal-text-template" data-text=" "</div> <!-- DISCOVER THE SECRETS -->
-            data-sound="locked-in-oneself" style="display: none;">
-            <div class="reveal-text-container">
-                <canvas class="reveal-text-canvas"></canvas>
-            </div>
-        </div>
-        <div class="image-template">
+        <div class="image-template locked-element">
             <a href="about-us.html" class="image-link" data-sound="vision" data-shape="circle">
-                <img src="assets/images/vision-page/vision-n3-thumb.jpg" alt="Fashion Winter Collection" loading="lazy"
-                    width="170" height="170">
+                <img src="assets/images/vision-page/vision-n3-thumb.jpg" alt="Fashion Winter Collection" loading="lazy" width="170" height="170">
                 <span class="tooltip">VISION</span>
             </a>
         </div>
-        <div class="image-template">
+        <div class="image-template locked-element">
             <a href="press.html" class="image-link" data-sound="press" data-shape="circle">
-                <img src="assets/images/press-page/press-gallery-5-thumb.jpeg" alt="Fashion Winter Collection" loading="lazy"
-                    width="170" height="170">
+                <img src="assets/images/press-page/press-gallery-5-thumb.jpeg" alt="Fashion Winter Collection" loading="lazy" width="170" height="170">
                 <span class="tooltip">PRESS</span>
             </a>
         </div>
-        <div class="image-template">
-            <div class="video-link" data-sound="locked-in-oneself" data-shape="circle">
-                <video autoplay muted loop playsinline width="180" height="320" preload="metadata">
-                    <source src="assets/vid/reels-mixed-vid.mp4" type="video/mp4">
-                </video>
-                <span class="tooltip">Preview Reel</span>
-            </div>
+        <div class="image-template locked-element video-link" data-sound="locked-in-oneself" data-shape="circle">
+            <video autoplay muted loop playsinline width="180" height="320" preload="metadata">
+                <source src="assets/vid/reels-mixed-vid.mp4" type="video/mp4">
+            </video>
+            <span class="tooltip">Preview Reel</span>
         </div>
     </div>
 
@@ -375,7 +401,7 @@
     <!-- Load scripts with defer for better performance -->
     <script defer src="assets/js/performance-monitor.js"></script>
     <script defer src="assets/js/ui-sounds.js"></script>
-    <script defer src="assets/js/script.js"></script>
+    <script defer src="assets/js/script.js?v=20260512a"></script>
 
     <!-- Darken background on map item hover + preloader + bfcache + intro-zoom -->
     <script defer src="assets/js/index-page.js?v=20260210e"></script>

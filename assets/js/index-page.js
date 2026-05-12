@@ -52,6 +52,30 @@ document.addEventListener('DOMContentLoaded', function () {
             if (container) container.classList.add('is-hovered');
         }
     }, { passive: true });
+
+    canvas.addEventListener('pointerdown', function (e) {
+        var mapItem = e.target.closest('.image-link, .video-link');
+        if (!mapItem) return;
+        var container = mapItem.closest('.image-container');
+        if (!container || container.dataset.outerNierika !== 'true') return;
+
+        var tooltipSpan = container.querySelector('.tooltip span');
+        if (tooltipSpan) {
+            tooltipSpan.dataset.lockedText = tooltipSpan.textContent;
+            tooltipSpan.textContent = 'LOCKED';
+        }
+
+        container.classList.add('outer-nierika-clicked');
+        document.getElementById('videos-background')?.classList.add('video-flash');
+
+        window.setTimeout(function () {
+            container.classList.remove('outer-nierika-clicked');
+            if (tooltipSpan && tooltipSpan.dataset.lockedText) {
+                tooltipSpan.textContent = tooltipSpan.dataset.lockedText;
+            }
+            document.getElementById('videos-background')?.classList.remove('video-flash');
+        }, 1000);
+    });
 });
 
 // --- LOGO CLICK: WHITE FADE TRANSITION TO INDEX ---
@@ -131,6 +155,17 @@ document.addEventListener('DOMContentLoaded', function () {
         window.addEventListener('tooltipHidden', function () {
             if (canPlayAudio) smoothVolumeTransition(BASE_VOLUME, 500);
         });
+
+        // Silenciar susurros cuando se abre modo cine
+        window.addEventListener('cinemaModeOpened', function () {
+            if (canPlayAudio) smoothVolumeTransition(0, 300);
+        });
+
+        // Restaurar volumen cuando se cierra modo cine
+        window.addEventListener('cinemaModeClosed', function () {
+            if (canPlayAudio) smoothVolumeTransition(BASE_VOLUME, 400);
+        });
+
         document.addEventListener('click', function (e) {
             if (e.target.closest('.image-link') && isPlaying) {
                 smoothVolumeTransition(0, 400);
