@@ -1,3 +1,4 @@
 *.mp4 filter=lfs diff=lfs merge=lfs -text
 *.mov filter=lfs diff=lfs merge=lfs -text
+assets/vid/** filter=lfs diff=lfs merge=lfs -text
 eftimos/assets/vid/nierika/HD/NIERIKA[[:space:]]FF_music_v5.mov filter=lfs diff=lfs merge=lfs -text
