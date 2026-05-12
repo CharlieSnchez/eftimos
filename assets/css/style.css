@@ -950,22 +950,22 @@ body.visual-effects-disabled .image-container video {
 
 @media screen and (max-width: 1199px) {
     .reveal-text-canvas {
-        width: 150px;
-        height: 150px;
+        width: 180px;
+        height: 180px;
     }
 }
 
 @media screen and (max-width: 991px) {
     .reveal-text-canvas {
-        width: 150px;
-        height: 150px;
+        width: 180px;
+        height: 180px;
     }
 }
 
 @media screen and (max-width: 767px) {
     .reveal-text-canvas {
-        width: 140px;
-        height: 140px;
+        width: 170px;
+        height: 170px;
     }
 }
 
