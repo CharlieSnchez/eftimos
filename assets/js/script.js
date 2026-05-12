@@ -593,6 +593,7 @@ let centerY = windowHeight / 2 - 40; // Subido 40px para centrar mejor el enfoqu
 let bufferX = windowWidth * bufferPercent;
 let bufferY = windowHeight * bufferPercent;
 
+
 //let contentWidth = (gridColumns - 1) * gridSpacing;
 //let contentHeight = (gridRows - 1) * gridSpacing;
 let contentHeight = 1 * gridSpacing;
