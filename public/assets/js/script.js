@@ -248,16 +248,43 @@ document.addEventListener('DOMContentLoaded', function () {
         if (loadingComplete) return;
         loadingComplete = true;
         const preloaderBarContainer = document.querySelector('.preloader-bar-container');
-        preloader.classList.add('loaded');
-        preloaderBar.classList.add('hide');
-        preloaderBarText.classList.add('hide');
-        if (preloaderBarContainer) preloaderBarContainer.style.display = 'none';
-        setTimeout(() => {
-            preloaderEnterBtn.textContent = 'Enter';
-            preloaderEnterBtn.classList.add('show');
-            preloaderEnterBtn.disabled = false;
-            preloaderEnterBtn.style.display = 'flex';
-        }, 500);
+
+        const revealEnterButton = () => {
+            preloader.classList.add('loaded');
+            preloaderBar.classList.add('hide');
+            preloaderBarText.classList.add('hide');
+            if (preloaderBarContainer) preloaderBarContainer.style.display = 'none';
+            setTimeout(() => {
+                preloaderEnterBtn.textContent = 'Enter';
+                preloaderEnterBtn.classList.add('show');
+                preloaderEnterBtn.disabled = false;
+                preloaderEnterBtn.style.display = 'flex';
+            }, 500);
+        };
+
+        const waitForBarCompletion = () => {
+            let called = false;
+            const onTransitionEnd = (event) => {
+                if (event.propertyName !== 'width') return;
+                if (called) return;
+                called = true;
+                revealEnterButton();
+            };
+            preloaderBar.addEventListener('transitionend', onTransitionEnd, { once: true });
+            setTimeout(() => {
+                if (!called) {
+                    called = true;
+                    revealEnterButton();
+                }
+            }, 400);
+        };
+
+        // If the bar is already rendering at full width, proceed after a short delay.
+        if (preloaderBar.style.width === '100%' || preloaderBar.style.width === '100.00%') {
+            setTimeout(revealEnterButton, 50);
+        } else {
+            waitForBarCompletion();
+        }
     }
 
     function animateBar() {
@@ -549,6 +576,44 @@ window.addEventListener('DOMContentLoaded', () => {
         window.scale = 0.2 * window.maxScale + 0.8 * window.minScale;
         window.targetScale = window.scale;
     }, 120);
+
+    const mapVideos = [];
+    const templateMapVideo = document.getElementById('nierika-video-player');
+    if (templateMapVideo) {
+        mapVideos.push(templateMapVideo);
+    }
+    document.querySelectorAll('#canvas .video-link video').forEach(video => {
+        if (!mapVideos.includes(video)) mapVideos.push(video);
+    });
+
+    const setMapVolume = (video) => {
+        video.muted = false;
+        video.defaultMuted = false;
+        video.volume = 0.03;
+        video.loop = true;
+        video.playsInline = true;
+        video.autoplay = true;
+    };
+
+    if (mapVideos.length) {
+        const tryPlayMapVideos = () => {
+            mapVideos.forEach(video => {
+                setMapVolume(video);
+                video.play().catch(() => {
+                    // Will be retried on first interaction if blocked.
+                });
+            });
+        };
+
+        mapVideos.forEach(video => {
+            video.addEventListener('loadedmetadata', () => setMapVolume(video));
+            video.addEventListener('loadeddata', () => setMapVolume(video));
+            video.addEventListener('canplay', () => setMapVolume(video));
+        });
+
+        tryPlayMapVideos();
+        document.addEventListener('click', tryPlayMapVideos, { once: true, passive: true });
+    }
 });
 
 const maxBlur = 12;
@@ -690,6 +755,17 @@ function createImageElement(imageIndex, gridX, gridY) {
 
     const template = imageTemplates[imageIndex];
     const clonedContent = template.cloneNode(true);
+
+    const clonedVideos = clonedContent.querySelectorAll('video');
+    clonedVideos.forEach(video => {
+        video.removeAttribute('id');
+        video.muted = false;
+        video.defaultMuted = false;
+        video.volume = 0.03;
+        video.loop = true;
+        video.playsInline = true;
+        video.autoplay = true;
+    });
 
     // Check if it's a reveal text template
     if (template.classList.contains('reveal-text-template')) {
@@ -837,7 +913,7 @@ function resistanceFunc(distance) {
     }
 }
 
-function closeCinema() {
+function clampTargetOffset() {
     targetOffsetX = Math.max(minOffsetX, Math.min(maxOffsetX, targetOffsetX));
     targetOffsetY = Math.max(minOffsetY, Math.min(maxOffsetY, targetOffsetY));
 }
@@ -1646,24 +1722,40 @@ function createMorphTransition(originalImg, targetUrl, soundId) {
 // Create Cinema Mode for inline video tiles
 function createCinemaMode(originalVideo, container) {
     if (!originalVideo) return;
-    // Prevent multiple cinema instances
     if (document.getElementById('cinemaClone')) return;
 
-    // Add animating class to container to remove grayscale
+    // Prevent duplicate cinema objects and preserve map playback state
+    const originalWasPlaying = !originalVideo.paused && !originalVideo.ended;
+    const originalSrc = originalVideo.currentSrc || originalVideo.querySelector('source')?.src || originalVideo.src || '';
+    const hdSrc = originalVideo.dataset.hd || originalVideo.querySelector('source')?.dataset?.hd || deriveHdSource(originalSrc);
+    const currentRect = originalVideo.getBoundingClientRect();
+
+    function deriveHdSource(src) {
+        if (!src) return src;
+        try {
+            const url = new URL(src, location.href);
+            const pathname = url.pathname;
+            if (pathname.toLowerCase().includes('/hd/')) return src;
+            const parts = pathname.split('/');
+            const filename = parts.pop();
+            parts.push('HD', filename);
+            url.pathname = parts.join('/');
+            return url.href;
+        } catch (e) {
+            return src;
+        }
+    }
+
     if (container) {
         container.classList.add('animating');
     }
-    // Ocultar hamburguesa y desactivar menú
-    var navBar = document.querySelector('nav.blending-item');
+    const navBar = document.querySelector('nav.blending-item');
     if (navBar) {
         navBar.style.opacity = '0';
         navBar.style.pointerEvents = 'none';
         navBar.style.transition = 'opacity 0.7s cubic-bezier(.77,0,.18,1)';
     }
 
-    const rect = originalVideo.getBoundingClientRect();
-
-    // Create dim background for cinema
     let cinemaDim = document.getElementById('cinemaDim');
     if (!cinemaDim) {
         cinemaDim = document.createElement('div');
@@ -1671,40 +1763,78 @@ function createCinemaMode(originalVideo, container) {
         document.body.appendChild(cinemaDim);
     }
     cinemaDim.style.zIndex = '99999';
-    cinemaDim.style.pointerEvents = 'none';
+    cinemaDim.style.pointerEvents = 'auto';
     cinemaDim.style.opacity = '0';
+    cinemaDim.style.transition = 'opacity 0.8s ease';
+    cinemaDim.style.background = 'rgba(0, 0, 0, 0.78)';
 
-    // Create cloned video element
-    const clone = originalVideo.cloneNode(true);
+    const clone = document.createElement('video');
     clone.id = 'cinemaClone';
     clone.muted = true;
     clone.loop = true;
     clone.playsInline = true;
     clone.autoplay = true;
     clone.style.position = 'fixed';
-    clone.style.left = rect.left + 'px';
-    clone.style.top = rect.top + 'px';
-    clone.style.width = rect.width + 'px';
-    clone.style.height = rect.height + 'px';
+    clone.style.left = currentRect.left + 'px';
+    clone.style.top = currentRect.top + 'px';
+    clone.style.width = currentRect.width + 'px';
+    clone.style.height = currentRect.height + 'px';
     clone.style.zIndex = '100001';
     clone.style.objectFit = 'contain';
     clone.style.pointerEvents = 'auto';
     clone.style.transition = 'all 0.8s cubic-bezier(0.76, 0, 0.24, 1)';
     clone.style.cursor = 'pointer';
+    clone.setAttribute('preload', 'auto');
+    if (originalVideo.poster) {
+        clone.poster = originalVideo.poster;
+    }
+
+    const cloneSource = document.createElement('source');
+    cloneSource.src = hdSrc || originalSrc;
+    cloneSource.type = 'video/mp4';
+    clone.appendChild(cloneSource);
+    clone.addEventListener('error', () => {
+        if (cloneSource.src !== originalSrc) {
+            cloneSource.src = originalSrc;
+            clone.load();
+        }
+    }, { once: true });
 
     document.body.appendChild(clone);
+    clone.load();
 
-    // Sync video playback time with original video
-    clone.currentTime = originalVideo.currentTime;
+    const mapVideoInPage = document.getElementById('nierika-video-player');
+    const mapVolumeBeforeCinema = mapVideoInPage ? mapVideoInPage.volume : 0.04;
+    if (mapVideoInPage) {
+        mapVideoInPage.volume = 0.015;
+    }
 
-    // Add close button
+    let userPaused = false;
+    let autoPlayAttempted = false;
+    function safeCinemaPlay() {
+        if (userPaused || autoPlayAttempted) return;
+        autoPlayAttempted = true;
+        clone.play().catch(() => {
+            // Some browsers will reject autoplay with audio; the click that opened cinema mode should allow playback.
+        });
+    }
+    clone.addEventListener('loadedmetadata', safeCinemaPlay, { once: true });
+    clone.addEventListener('canplay', safeCinemaPlay, { once: true });
+    if (clone.readyState >= 1) {
+        safeCinemaPlay();
+    }
+
+    clone.addEventListener('playing', () => {
+        clone.muted = false;
+        clone.volume = 0.5;
+    });
+
     const closeBtn = document.createElement('button');
     closeBtn.className = 'cinema-close';
     closeBtn.id = 'cinemaClose';
     closeBtn.innerHTML = '&#x2715;';
     document.body.appendChild(closeBtn);
 
-    // Create controls
     const controls = document.createElement('div');
     controls.className = 'cinema-controls';
     controls.id = 'cinemaControls';
@@ -1727,10 +1857,8 @@ function createCinemaMode(originalVideo, container) {
     `;
     document.body.appendChild(controls);
 
-    // Set initial volume
     clone.volume = 0.5;
 
-    // Format time helper
     function formatTime(seconds) {
         if (isNaN(seconds)) return '0:00';
         const mins = Math.floor(seconds / 60);
@@ -1738,7 +1866,6 @@ function createCinemaMode(originalVideo, container) {
         return mins + ':' + (secs < 10 ? '0' : '') + secs;
     }
 
-    // Update progress bar
     const progressBar = document.getElementById('progressBar');
     const progressFill = document.getElementById('progressFill');
     const currentTimeSpan = document.getElementById('currentTime');
@@ -1747,63 +1874,79 @@ function createCinemaMode(originalVideo, container) {
     const volumeSlider = document.getElementById('volumeSlider');
     const volumeIcon = document.getElementById('volumeIcon');
 
-    // Set duration when metadata loads
-    clone.addEventListener('loadedmetadata', () => {
-        durationSpan.textContent = formatTime(clone.duration);
-    });
+    function syncCloneTime() {
+        try {
+            if (!isNaN(originalVideo.currentTime)) {
+                clone.currentTime = originalVideo.currentTime;
+            }
+        } catch (e) {
+            // ignore timing restrictions before metadata is ready
+        }
+    }
 
-    // Update progress
+    clone.addEventListener('loadedmetadata', () => {
+        syncCloneTime();
+        durationSpan.textContent = formatTime(clone.duration);
+    }, { once: true });
+    if (clone.readyState >= 1) {
+        syncCloneTime();
+    }
+
     clone.addEventListener('timeupdate', () => {
-        const percent = (clone.currentTime / clone.duration) * 100;
+        const percent = (clone.duration > 0) ? (clone.currentTime / clone.duration) * 100 : 0;
         progressFill.style.width = percent + '%';
         currentTimeSpan.textContent = formatTime(clone.currentTime);
     });
 
-    // Click on progress bar to seek
     progressBar.addEventListener('click', (e) => {
         const rect = progressBar.getBoundingClientRect();
         const percent = (e.clientX - rect.left) / rect.width;
         clone.currentTime = percent * clone.duration;
     });
 
-    // Play/Pause button
     playPauseBtn.addEventListener('click', () => {
         if (clone.paused) {
+            userPaused = false;
+            clone.autoplay = true;
             clone.play();
             playPauseBtn.textContent = '⏸';
         } else {
+            userPaused = true;
+            clone.autoplay = false;
             clone.pause();
             playPauseBtn.textContent = '▶';
         }
     });
 
-    // Update button on play/pause
     clone.addEventListener('play', () => {
         playPauseBtn.textContent = '⏸';
+        userPaused = false;
     });
 
     clone.addEventListener('pause', () => {
         playPauseBtn.textContent = '▶';
+        userPaused = true;
+        clone.autoplay = false;
     });
 
-    // Click on video to toggle play/pause
     clone.addEventListener('click', (e) => {
         e.stopPropagation();
         if (clone.paused) {
+            userPaused = false;
+            clone.autoplay = true;
             clone.play();
             playPauseBtn.textContent = '⏸';
         } else {
+            userPaused = true;
+            clone.autoplay = false;
             clone.pause();
             playPauseBtn.textContent = '▶';
         }
     });
 
-    // Volume slider
     volumeSlider.addEventListener('input', (e) => {
         const volume = e.target.value / 100;
         clone.volume = volume;
-
-        // Update volume icon opacity
         if (volume === 0) {
             volumeIcon.style.opacity = '0.3';
         } else if (volume < 0.5) {
@@ -1813,7 +1956,6 @@ function createCinemaMode(originalVideo, container) {
         }
     });
 
-    // Mute toggle on icon click
     volumeIcon.addEventListener('click', () => {
         if (clone.volume > 0) {
             clone.volume = 0;
@@ -1826,108 +1968,101 @@ function createCinemaMode(originalVideo, container) {
         }
     });
 
-    // Fade in dim immediately, then expand video to full screen
     requestAnimationFrame(() => {
         cinemaDim.style.opacity = '0.78';
-        try { clone.play(); } catch (e) { }
+        if (!userPaused) {
+            try { clone.play(); } catch (e) { }
+        }
         clone.style.left = '0px';
         clone.style.top = '0px';
         clone.style.width = '100vw';
         clone.style.height = '100vh';
     });
 
-    // Hide original video after a small delay to avoid pop
     setTimeout(() => {
         originalVideo.style.transition = 'opacity 0.3s ease';
         originalVideo.style.opacity = '0';
     }, 50);
 
     function closeCinema() {
-        // --- NUEVO: Reposicionar el mapa/video inmediatamente según cámara en mano ---
         if (typeof window.setHandheldCameraShake === 'function') {
             window.setHandheldCameraShake(true);
         }
-        // Remove animating class from container to restore grayscale
         if (container) {
             container.classList.remove('animating');
         }
-        // Restaurar hamburguesa y menú
-        var navBar = document.querySelector('nav.blending-item');
+        const navBar = document.querySelector('nav.blending-item');
         if (navBar) {
             navBar.style.opacity = '1';
             navBar.style.pointerEvents = '';
         }
-        // Cerrar cine si se hace click fuera del video y controles
-        function onCinemaDimClick(e) {
-            const controls = document.getElementById('cinemaControls');
-            const clone = document.getElementById('cinemaClone');
-            const closeBtn = document.getElementById('cinemaClose');
-            if (controls && controls.contains(e.target)) return;
-            if (clone && clone.contains(e.target)) return;
-            if (closeBtn && closeBtn.contains(e.target)) return;
-            closeCinema();
-        }
-        document.addEventListener('click', onCinemaDimClick);
-        // Limpiar listener al cerrar
-        const prevCloseCinema = closeCinema;
-        closeCinema = function () {
-            document.removeEventListener('click', onCinemaDimClick);
-            prevCloseCinema();
-        };
 
-        // Calculate blur for the video at its original position
-        const videoCenterX = rect.left + rect.width / 2;
-        const videoCenterY = rect.top + rect.height / 2;
-
+        const targetRect = originalVideo.getBoundingClientRect();
+        const videoCenterX = targetRect.left + targetRect.width / 2;
+        const videoCenterY = targetRect.top + targetRect.height / 2;
         const distX = videoCenterX - centerX;
         const distY = videoCenterY - centerY;
         const distance = Math.sqrt(distX * distX + distY * distY);
 
         let videoBlur = (distance / blurRadiusScaled) * maxBlur;
         videoBlur = Math.max(0, Math.min(maxBlur, videoBlur));
-
-        // Check if focused element reduces blur
         if (focusedElementPos) {
             const focusDistX = videoCenterX - focusedElementPos.x;
             const focusDistY = videoCenterY - focusedElementPos.y;
             const focusDistance = Math.sqrt(focusDistX * focusDistX + focusDistY * focusDistY);
-
             if (focusDistance < focusedElementRadius) {
                 videoBlur = 0;
             }
         }
 
-        // reverse animation: shrink clone back to original rect + cámara en mano
         let offset = { x: 0, y: 0 };
         if (typeof window.getHandheldCameraOffset === 'function') {
             offset = window.getHandheldCameraOffset() || { x: 0, y: 0 };
         }
-        clone.style.left = (rect.left + offset.x) + 'px';
-        clone.style.top = (rect.top + offset.y) + 'px';
-        clone.style.width = rect.width + 'px';
-        clone.style.height = rect.height + 'px';
+
+        clone.style.left = (targetRect.left + offset.x) + 'px';
+        clone.style.top = (targetRect.top + offset.y) + 'px';
+        clone.style.width = targetRect.width + 'px';
+        clone.style.height = targetRect.height + 'px';
         clone.style.filter = 'blur(' + videoBlur + 'px)';
         cinemaDim.style.opacity = '0';
         closeBtn.remove();
-        // Remove controls
         const cinemaControls = document.getElementById('cinemaControls');
         if (cinemaControls) cinemaControls.remove();
-        // after transition remove elements
+
         setTimeout(() => {
-            // Restaurar solo la opacidad del video original, sin tocar posición ni tamaño
             originalVideo.style.opacity = '1';
+            originalVideo.style.transition = 'opacity 0.3s ease';
+            try {
+                originalVideo.currentTime = clone.currentTime;
+            } catch (e) {
+                // ignore if time update is blocked
+            }
+            if (mapVideoInPage) {
+                mapVideoInPage.volume = mapVolumeBeforeCinema || 0.04;
+            }
+            if (originalWasPlaying) {
+                originalVideo.play().catch(() => { });
+            }
             try { clone.pause(); } catch (e) { }
             clone.remove();
             if (cinemaDim) cinemaDim.remove();
         }, 1000);
+
         window.removeEventListener('keydown', onKey);
-        document.removeEventListener('click', onCinemaDimClick);
+        cinemaDim.removeEventListener('click', onCinemaDimClick);
+    }
+
+    function onCinemaDimClick(e) {
+        if (clone.contains(e.target) || controls.contains(e.target) || closeBtn.contains(e.target)) return;
+        closeCinema();
     }
 
     function onKey(ev) {
         if (ev.key === 'Escape') closeCinema();
     }
 
+    cinemaDim.addEventListener('click', onCinemaDimClick);
     closeBtn.addEventListener('click', closeCinema);
     window.addEventListener('keydown', onKey);
 }
