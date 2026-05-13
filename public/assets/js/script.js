@@ -664,11 +664,12 @@ let bufferY = windowHeight * bufferPercent;
 let contentHeight = 1 * gridSpacing;
 let contentWidth = 1 * gridSpacing;
 
+let extraPadding = 100;
 
-let minOffsetX = -contentWidth - bufferX;
-let maxOffsetX = contentWidth + bufferX;
-let minOffsetY = -contentHeight - bufferY;
-let maxOffsetY = contentHeight + bufferY;
+let minOffsetX = -contentWidth - bufferX - extraPadding;
+let maxOffsetX = contentWidth + bufferX + extraPadding;
+let minOffsetY = -contentHeight - bufferY - extraPadding;
+let maxOffsetY = contentHeight + bufferY + extraPadding;
 
 // Make map bounds globally accessible for controls.js audio intensification
 window.minOffsetX = minOffsetX;
@@ -2421,10 +2422,10 @@ window.addEventListener('resize', () => {
         contentWidth = (gridColumns - 1) * gridSpacing;
         contentHeight = (gridRows - 1) * gridSpacing;
 
-        minOffsetX = -contentWidth - bufferX;
-        maxOffsetX = bufferX;
-        minOffsetY = -contentHeight - bufferY;
-        maxOffsetY = bufferY;
+        minOffsetX = -contentWidth - bufferX - extraPadding;
+        maxOffsetX = bufferX + extraPadding;
+        minOffsetY = -contentHeight - bufferY - extraPadding;
+        maxOffsetY = bufferY + extraPadding;
 
         blurRadiusScaled = blurRadius * scale;
 
