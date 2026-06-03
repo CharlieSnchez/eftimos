@@ -63,7 +63,7 @@
             // Create new drop text element
             const dropText = document.createElement('div');
             dropText.className = 'drop-text-container';
-            dropText.innerHTML = '<span class=\"drop-text\">DROP 1<br>NOW AVAILABLE</span>';
+            dropText.innerHTML = '<span class=\"drop-text\">DROP 2<br>NOW AVAILABLE</span>';
             countdownLargeContent.appendChild(dropText);
         }
         
